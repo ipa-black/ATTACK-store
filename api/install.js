@@ -2,17 +2,9 @@ module.exports = (req, res) => {
   const { udid } = req.query;
   if (!udid) return res.status(400).send("UDID is required");
 
-  const githubRepo = process.env.GITHUB_REPO;
-  
-  let buttonsHtml = '';
-  for (let i = 1; i <= 12; i++) {
-      const plistUrl = `https://github.com/${githubRepo}/releases/download/attack-${udid}/manifest_${i}.plist`;
-      buttonsHtml += `
-      <a href="itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}" class="btn" style="margin-bottom: 12px; font-size: 14px; padding: 12px;">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-          تثبيت مباشر (سيرفر ${i})
-      </a>`;
-  }
+  const host = req.headers.host;
+  // يستدعي ملف المانيفست الديناميكي الموجود عندك في api/manifest.js
+  const manifestUrl = `https://${host}/users/${udid}/manifest.plist?t=${Date.now()}`;
 
   const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -29,12 +21,9 @@ module.exports = (req, res) => {
         .store-name { color: #fff; font-size: 20px; font-weight: bold; letter-spacing: 2px; margin-bottom: 20px; opacity: 0.9; }
         p { color: #92bbae; font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
         .udid-badge { display: inline-block; background: rgba(0, 255, 136, 0.1); padding: 8px 16px; border-radius: 12px; font-family: monospace; font-size: 11px; color: #00ff88; margin-top: 15px; border: 1px solid rgba(0, 255, 136, 0.3); }
-        .btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #00ff88, #00b35f); color: #03140d; border-radius: 16px; text-decoration: none; font-weight: bold; box-shadow: 0 8px 25px rgba(0, 255, 136, 0.3); transition: all 0.2s; }
+        .btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #00ff88, #00b35f); color: #03140d; padding: 16px; border-radius: 16px; text-decoration: none; font-weight: bold; font-size: 17px; box-shadow: 0 8px 25px rgba(0, 255, 136, 0.3); transition: all 0.2s; }
         .btn:active { transform: scale(0.96); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.5); }
-        .btn svg { width: 20px; height: 20px; fill: currentColor; }
-        .links-grid { display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
-        .links-grid::-webkit-scrollbar { width: 6px; }
-        .links-grid::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.5); border-radius: 10px; }
+        .btn svg { width: 22px; height: 22px; fill: currentColor; }
     </style>
 </head>
 <body>
@@ -55,10 +44,12 @@ module.exports = (req, res) => {
         </div>
         <h2 class="success-text">تم تفعيل اشتراكك</h2>
         <div class="store-name">الرئيسية</div>
-        <p>اختر أحد خوادم التثبيت الـ 12 بالأسفل لضمان تحميل المتجر دون أي أخطاء انقطاع.<br><span class="udid-badge">UDID: ${udid}</span></p>
-        <div class="links-grid">
-            ${buttonsHtml}
-        </div>
+        <p>اضغط على زر التثبيت أدناه لتثبيت المتجر على جهازك مباشرة.<br><span class="udid-badge">UDID: ${udid}</span></p>
+        
+        <a href="itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}" class="btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            تثبيت المتجر
+        </a>
     </div>
 </body>
 </html>`;
