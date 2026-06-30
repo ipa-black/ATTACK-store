@@ -1,8 +1,11 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/api/bot", "destination": "/api/bot.js" },
+    { "source": "/api/trigger", "destination": "/api/trigger.js" },
     { "source": "/users/:udid/manifest.plist", "destination": "/api/manifest?udid=:udid" },
     { "source": "/users/:udid", "destination": "/api/install?udid=:udid" },
+    { "source": "/panel", "destination": "/public/panel.html" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
