@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   }
 
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const vercelDomain = process.env.VERCEL_DOMAIN; 
+  const vercelDomain = process.env.VERCEL_DOMAIN; // مثال: attack-store.vercel.app
   const mainAdminId = String(process.env.ADMIN_ID); 
 
   if (!global.moderators) global.moderators = {}; 
@@ -46,7 +46,9 @@ module.exports = async (req, res) => {
   // --- 1. الرد عند رفع الشهادة من الـ Web App ---
   if (webAppData) {
       const udid = webAppData.data || "UNKNOWN_UDID"; 
-      const installUrl = `https://${vercelDomain}/api/install?udid=${udid}`; 
+      
+      // التوجيه إلى مسار المستخدمين كما كان يعمل سابقاً
+      const installUrl = `https://${vercelDomain}/users/${udid}`; 
       
       const markup = {
           inline_keyboard: [
@@ -54,6 +56,9 @@ module.exports = async (req, res) => {
           ]
       };
       
+      // استدعاء ملف trigger.js إذا لزم الأمر
+      // await fetch(`https://${vercelDomain}/api/trigger?udid=${udid}`);
+
       await sendMessage(chatId, "✅ تم تفعيل اشتراكك", markup);
       return res.status(200).send('OK');
   }
@@ -99,18 +104,29 @@ module.exports = async (req, res) => {
 
   // --- 3. الرد بعد إدخال الرمز السري للشهادة ---
   if (global.signState[chatId]?.step === 'WAITING_CERT_PASSWORD' && text && !text.startsWith('/')) {
-      // جلب الـ UDID الذي تم استخراجه مسبقاً من اسم الملف
       const udid = global.signState[chatId].udid;
+      const certPassword = text;
+      const fileUrl = global.signState[chatId].fileUrl;
       
-      delete global.signState[chatId]; // إنهاء العملية ومسح الحالة
+      delete global.signState[chatId]; 
       
-      const installUrl = `https://${vercelDomain}/api/install?udid=${udid}`; 
+      // التوجيه إلى مسار المستخدمين المطابق لهندسة مشروعك
+      const installUrl = `https://${vercelDomain}/users/${udid}`; 
       const markup = {
           inline_keyboard: [
               [{ text: "📲 تثبيت التطبيق", url: installUrl, style: "primary" }]
           ]
       };
       
+      // استدعاء ملف trigger.js لإبلاغ GitHub بالبدء بالتوقيع
+      /*
+      await fetch(`https://${vercelDomain}/api/trigger`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ udid: udid, certUrl: fileUrl, password: certPassword })
+      });
+      */
+
       await sendMessage(chatId, "✅ تم تفعيل اشتراكك", markup);
       return res.status(200).send('OK');
   }
@@ -174,7 +190,6 @@ module.exports = async (req, res) => {
 
   // --- 5. واجهة "الرئيسية" ---
   if (text.startsWith('/start') || text === '/panel') {
-    // تم التعديل ليتوجه إلى api/enroll
     const udidUrl = `https://${vercelDomain}/api/enroll`; 
     
     let inline_keyboard = [
