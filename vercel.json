@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/users/:udid/manifest.plist", "destination": "/api/manifest?udid=:udid" },
+    { "source": "/users/:udid", "destination": "/api/install?udid=:udid" },
+    { "source": "/(.*)", "destination": "/public/$1" }
+  ]
+}
