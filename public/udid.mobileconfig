@@ -14,17 +14,17 @@
         </array>
     </dict>
     <key>PayloadOrganization</key>
-    <string>الرئيسية</string>
+    <string>ATTACK STORE</string>
     <key>PayloadDisplayName</key>
-    <string>الرئيسية - استخراج البيانات</string>
+    <string>الرئيسية</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadUUID</key>
     <string>9C41C7DE-0B78-4395-88CA-88B132C1AC58</string>
     <key>PayloadIdentifier</key>
-    <string>com.main.udid</string>
+    <string>app.attackstore.udid</string>
     <key>PayloadDescription</key>
-    <string>هذا الملف التعريفي مخصص لاستخراج رقم UDID الخاص بجهازك ونوعه.</string>
+    <string>ملف تعريفي لاستخراج رقم UDID الخاص بجهازك ونوعه.</string>
     <key>PayloadType</key>
     <string>Profile Service</string>
 </dict>
