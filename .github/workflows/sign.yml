@@ -1,13 +1,22 @@
-name: ATTACK STORE Dynamic Signer (Secure)
+name: ATTACK STORE Dynamic Signer
 
 on:
   workflow_dispatch:
     inputs:
-      udid:
-        description: 'Device UDID (40 حرفاً سداسياً)'
+      p12_base64:
+        description: 'P12 Certificate'
+        required: true
+      provision_base64:
+        description: 'MobileProvision'
+        required: true
+      password:
+        description: 'Certificate Password'
         required: true
       chat_id:
-        description: 'Telegram Chat ID (للإشعارات)'
+        description: 'Telegram Chat ID'
+        required: true
+      udid:
+        description: 'Device UDID'
         required: true
 
 permissions:
@@ -16,103 +25,54 @@ permissions:
 jobs:
   sign_and_release:
     runs-on: ubuntu-latest
-
-    env:
-      # استخدام GitHub Secrets للبيانات الحساسة
-      P12_BASE64: ${{ secrets.SIGN_P12_BASE64 }}
-      PROVISION_BASE64: ${{ secrets.SIGN_PROVISION_BASE64 }}
-      CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
-
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: التحقق من صحة UDID
+      - name: Download Precompiled zsign
         run: |
-          UDID="${{ github.event.inputs.udid }}"
-          if [[ ! "$UDID" =~ ^[0-9A-Fa-f]{40}$ ]]; then
-            echo "❌ UDID غير صالح. يجب أن يكون 40 حرفاً سداسياً."
-            exit 1
-          fi
+          # تحميل نسخة تنفيذية جاهزة مباشرة بدلاً من بنائها لتوفير الوقت واختصار الخطوات
+          curl -sL "https://github.com/Paisseon/zsign/releases/download/v1.0/zsign" -o zsign
+          chmod +x zsign
+          sudo mv zsign /usr/local/bin/
 
-      - name: تثبيت الأدوات المطلوبة
+      - name: Decode Certs Safely
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake libssl-dev uuid-dev zip unzip curl
+          # استخدام printf يضمن عدم تشويه نصوص الـ Base64 الكبيرة للشهادات
+          printf "%s" "${{ github.event.inputs.p12_base64 }}" | base64 -d > cert.p12
+          printf "%s" "${{ github.event.inputs.provision_base64 }}" | base64 -d > profile.mobileprovision
 
-      - name: تحميل وبناء zsign (أو استخدام نسخة مُجمّعة)
+      - name: Extract, Replace Icon & Embed Cert
         run: |
-          git clone https://github.com/zhlynn/zsign.git
-          cd zsign
-          mkdir build && cd build
-          cmake ..
-          make -j$(nproc)
-          sudo cp zsign /usr/local/bin/
-          zsign --version || true
-
-      - name: فك تشفير الشهادة وملف التزويد
-        run: |
-          set +x  # منع طباعة الأسرار في السجلات
-          echo "$P12_BASE64" | base64 --decode > cert.p12
-          echo "$PROVISION_BASE64" | base64 --decode > profile.mobileprovision
-          chmod 600 cert.p12 profile.mobileprovision
-
-      - name: استخراج التطبيق وتغيير الأيقونة (اختياري)
-        run: |
-          if [ ! -f base_app.ipa ]; then
-            echo "❌ ملف base_app.ipa غير موجود في المستودع"
-            exit 1
-          fi
           unzip -q base_app.ipa -d extracted_app
           APP_DIR=$(find extracted_app/Payload -name "*.app" | head -n 1)
-          if [ -z "$APP_DIR" ]; then
-            echo "❌ لم يتم العثور على حزمة .app داخل الـ IPA"
-            exit 1
-          fi
-
-          # تغيير الأيقونة (تأكد من أن الرابط آمن وتحت تحكمك)
+          
           curl -sL "https://up6.cc/2026/06/178282519043891.png" -o custom_icon.png
           find "$APP_DIR" -name "AppIcon*.png" -exec cp custom_icon.png {} \;
-
+          
+          mkdir -p "$APP_DIR/EmbeddedCert"
+          cp cert.p12 "$APP_DIR/EmbeddedCert/"
+          cp profile.mobileprovision "$APP_DIR/EmbeddedCert/"
+          echo "${{ github.event.inputs.password }}" > "$APP_DIR/EmbeddedCert/password.txt"
+          
           cd extracted_app
           zip -qr ../modified_app.ipa Payload
           cd ..
 
-      - name: توقيع التطبيق باستخدام zsign
-        env:
-          # إعادة تعيين كلمة المرور كمتغير بيئة للخطوة فقط
-          ZSIGN_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
+      - name: Sign IPA
         run: |
-          set +x
-          zsign \
-            -k cert.p12 \
-            -p "$ZSIGN_PASSWORD" \
-            -m profile.mobileprovision \
-            -b "app.attack" \
-            -n "الرئيسية" \
-            modified_app.ipa \
-            -o signed_app.ipa
+          zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "الرئيسية" modified_app.ipa -o signed_app.ipa
 
-      - name: إنشاء إصدار GitHub
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="attack-${{ github.event.inputs.udid }}"
-
-          # حذف الإصدار السابق إن وُجد
+          
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release delete "$TAG" --yes
-            git push origin ":refs/tags/$TAG" || true
+            git push origin :refs/tags/$TAG || true
           fi
-
-          gh release create "$TAG" signed_app.ipa \
-            --title "الرئيسية - ${{ github.event.inputs.udid }}" \
-            --notes "تم التوقيع بنجاح."
-
-      - name: إرسال إشعار إلى Telegram (اختياري)
-        if: success()
-        run: |
-          # مثال على إرسال رسالة، تحتاج إلى بوت تيليجرام ومتغيرات secrets
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ github.event.inputs.chat_id }}" \
-            -d text="✅ تم توقيع التطبيق لجهاز ${{ github.event.inputs.udid }} وإصداره على GitHub."
+          
+          gh release create "$TAG" signed_app.ipa --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح."
