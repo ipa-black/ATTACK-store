@@ -9,14 +9,13 @@
         <key>DeviceAttributes</key>
         <array>
             <string>UDID</string>
-            <string>VERSION</string>
             <string>PRODUCT</string>
         </array>
     </dict>
     <key>PayloadOrganization</key>
     <string>ATTACK STORE</string>
     <key>PayloadDisplayName</key>
-    <string>ATTACK STORE</string>
+    <string>الرئيسية</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadUUID</key>
