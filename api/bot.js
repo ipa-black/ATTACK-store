@@ -4,11 +4,12 @@ module.exports = async (req, res) => {
   const message = req.body.message;
   const callbackQuery = req.body.callback_query; 
 
-  let chatId, text, document;
+  let chatId, text, document, webAppData;
   if (message) {
       chatId = String(message.chat.id);
       text = message.text ? message.text.trim() : '';
-      document = message.document; // التقاط الملفات المرفقة أو المحولة
+      document = message.document;
+      webAppData = message.web_app_data; // التقاط البيانات القادمة من الـ Web App
   } else if (callbackQuery) {
       chatId = String(callbackQuery.message.chat.id);
       text = callbackQuery.data;
@@ -20,14 +21,16 @@ module.exports = async (req, res) => {
   const vercelDomain = process.env.VERCEL_DOMAIN; 
   const mainAdminId = String(process.env.ADMIN_ID); 
 
+  // --- نظام تخزين المشرفين، وحالة التوقيع ---
   if (!global.moderators) global.moderators = {}; 
   if (!global.adminState) global.adminState = {};
+  if (!global.signState) global.signState = {};
 
   const isMainAdmin = chatId === mainAdminId;
   const isMod = global.moderators[chatId] !== undefined;
 
   const sendMessage = async (id, msg, markup = null) => {
-    const payload = { chat_id: id, text: msg };
+    const payload = { chat_id: id, text: msg, parse_mode: 'Markdown' };
     if (markup) payload.reply_markup = markup;
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
@@ -36,22 +39,33 @@ module.exports = async (req, res) => {
     });
   };
 
-  // 1. حماية البوت
   if (!isMainAdmin && !isMod) {
       await sendMessage(chatId, "⛔️ غير مصرح لك باستخدام هذا البوت.");
       return res.status(200).send('OK');
   }
 
-  // --- 2. نظام استقبال ملفات الشهادات ---
+  // --- 1. معالجة البيانات القادمة من الـ Web App ---
+  if (webAppData) {
+      // عندما يقوم المستخدم برفع الشهادة والتوقيع من خلال لوحة الـ Mini App
+      // صفحة الروابط الثابتة لتجنب أخطاء توليد الـ Manifest
+      const staticInstallUrl = `https://${vercelDomain}/install.html`; 
+      
+      const markup = {
+          inline_keyboard: [
+              [{ text: "📲 تثبيت عبر سفاري", url: staticInstallUrl, style: "success" }]
+          ]
+      };
+      
+      await sendMessage(chatId, "✅ تم استلام بيانات الشهادة من لوحة التحكم وبدء التجهيز!\nيمكنك التثبيت عبر سفاري من خلال الروابط أدناه:", markup);
+      return res.status(200).send('OK');
+  }
+
+  // --- 2. استلام ملفات الشهادة من المحادثة ---
   if (document) {
       const fileName = document.file_name.toLowerCase();
       
-      // التحقق من صيغة الملف
-      if (fileName.endsWith('.p12') || fileName.endsWith('.mobileprovision')) {
-          await sendMessage(chatId, `⏳ تم استلام الملف: ${document.file_name}\nجاري التجهيز للتوقيع...`);
-          
+      if (fileName.endsWith('.p12')) {
           try {
-              // جلب مسار الملف من تيليجرام
               const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${document.file_id}`);
               const fileData = await fileRes.json();
               
@@ -59,42 +73,49 @@ module.exports = async (req, res) => {
                   const filePath = fileData.result.file_path;
                   const fileDownloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
                   
-                  // 🚀 هنا يمكنك كتابة الكود الذي يرسل رابط الملف (fileDownloadUrl)
-                  // إلى GitHub Actions (عبر Repository Dispatch) أو سيرفر التوقيع الخاص بك:
-                  /*
-                  await fetch('https://api.github.com/repos/USERNAME/REPO/dispatches', {
-                      method: 'POST',
-                      headers: {
-                          'Accept': 'application/vnd.github.v3+json',
-                          'Authorization': `token ${process.env.GITHUB_TOKEN}`
-                      },
-                      body: JSON.stringify({
-                          event_type: 'sign_app',
-                          client_payload: { cert_url: fileDownloadUrl, file_name: fileName }
-                      })
-                  });
-                  */
-
-                  await sendMessage(chatId, `✅ تم تجهيز الملف بنجاح!\nالرابط المباشر للملف أصبح جاهزاً للإرسال إلى سيرفر التوقيع (GitHub Actions).`);
+                  global.signState[chatId] = { step: 'WAITING_CERT_PASSWORD', fileUrl: fileDownloadUrl, fileName: document.file_name };
+                  
+                  await sendMessage(chatId, `🔐 تم استلام شهادة P12 (${document.file_name}).\nيرجى إرسال **الرمز السري (Password)** الخاص بالشهادة الآن:`);
               } else {
-                  await sendMessage(chatId, "❌ حدث خطأ أثناء محاولة الوصول للملف من تيليجرام.");
+                  await sendMessage(chatId, "❌ حدث خطأ أثناء الوصول للملف.");
               }
           } catch (err) {
               await sendMessage(chatId, "❌ حدث خطأ في الاتصال.");
           }
+      } else if (fileName.endsWith('.mobileprovision')) {
+          await sendMessage(chatId, `✅ تم استلام ملف Provision (${document.file_name}). الملف جاهز للدمج.`);
       } else if (fileName.endsWith('.ipa')) {
-          await sendMessage(chatId, "⏳ تم استلام تطبيق بصيغة IPA، جاري تحويله للتوقيع...");
-          // نفس منطق الـ p12 يطبق هنا لتحويل مسار الـ IPA
+          await sendMessage(chatId, "⏳ تم استلام تطبيق بصيغة IPA، جاري تجهيزه للتوقيع...");
       } else {
-          await sendMessage(chatId, "⚠️ يرجى إرسال أو تحويل ملفات الشهادة (.p12, .mobileprovision) أو تطبيقات (.ipa) فقط.");
+          await sendMessage(chatId, "⚠️ يرجى إرسال ملفات الشهادة (.p12, .mobileprovision) أو تطبيقات (.ipa) فقط.");
       }
       return res.status(200).send('OK');
   }
 
-  // 3. إدارة المشرفين
+  // --- 3. استلام الرمز السري والرد بزر التثبيت ---
+  if (global.signState[chatId]?.step === 'WAITING_CERT_PASSWORD' && text && !text.startsWith('/')) {
+      const certPassword = text;
+      const fileName = global.signState[chatId].fileName;
+      
+      delete global.signState[chatId]; 
+      
+      // توجيه لصفحة الروابط الثابتة المباشرة
+      const staticInstallUrl = `https://${vercelDomain}/install.html`; 
+      const markup = {
+          inline_keyboard: [
+              [{ text: "📲 تثبيت عبر سفاري", url: staticInstallUrl, style: "success" }]
+          ]
+      };
+      
+      await sendMessage(chatId, `✅ تم استلام الرمز السري للشهادة (${fileName}) بنجاح!\nالملف والرمز جاهزان.\nاضغط على الزر أدناه للتثبيت مباشرة عبر سفاري:`, markup);
+      
+      return res.status(200).send('OK');
+  }
+
+  // --- 4. إدارة المشرفين ---
   if (isMainAdmin) {
       if (text === 'admin_manage_btn') {
-          await sendMessage(chatId, "👑 **قائمة أوامر الإدارة:**\n\n- لإضافة مشرف أرسل: `/addmod`\n- لعزل مشرف أرسل: `/delmod`\n- لعرض المشرفين أرسل: `/mods`");
+          await sendMessage(chatId, "👑 **قائمة أوامر الإدارة:**\n- لإضافة مشرف: `/addmod`\n- لعزل مشرف: `/delmod`\n- لعرض المشرفين: `/mods`");
           return res.status(200).send('OK');
       }
 
@@ -131,7 +152,7 @@ module.exports = async (req, res) => {
               delete global.moderators[text];
               await sendMessage(chatId, `✅ تم عزل المشرف (${modName}) بنجاح.`);
           } else {
-              await sendMessage(chatId, "⚠️ الآي دي غير موجود في قائمة المشرفين.");
+              await sendMessage(chatId, "⚠️ الآي دي غير موجود.");
           }
           delete global.adminState[chatId];
           return res.status(200).send('OK');
@@ -148,23 +169,23 @@ module.exports = async (req, res) => {
       }
   }
 
-  // 4. لوحة التحكم الأساسية
+  // --- 5. واجهة "الرئيسية" ---
   if (text.startsWith('/start') || text === '/panel') {
     const panelUrl = `https://${vercelDomain}/panel.html`;
     const udidUrl = `https://${vercelDomain}/`; 
     
     let inline_keyboard = [
-      [{ text: "🧭 فتح لوحة التحكم في سفاري", url: panelUrl }],
-      [{ text: "🌐 استخراج UDID", url: udidUrl }]
+      [{ text: "🧭 فتح لوحة التحكم", url: panelUrl, style: "primary" }], 
+      [{ text: "🌐 استخراج UDID", url: udidUrl, style: "success" }]      
     ];
 
     if (isMainAdmin) {
-      inline_keyboard.push([{ text: "👑 أوامر إدارة المشرفين", callback_data: "admin_manage_btn" }]);
+      inline_keyboard.push([{ text: "👑 أوامر إدارة المشرفين", callback_data: "admin_manage_btn", style: "danger" }]); 
     }
 
     const markup = { inline_keyboard };
 
-    await sendMessage(chatId, "أهلاً بك في الرئيسية 🚀\nاختر من الأزرار بالأسفل، أو قم بتحويل ملفات الشهادة (.p12, .mobileprovision) إلى هذا البوت لبدء التوقيع:", markup);
+    await sendMessage(chatId, "أهلاً بك في **الرئيسية** 🚀\nقم بفتح اللوحة، أو حوّل ملف الشهادة (.p12) ليبدأ البوت بالعمل:", markup);
   }
 
   res.status(200).send('OK');
