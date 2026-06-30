@@ -69,12 +69,10 @@ jobs:
               with open(plist_path, 'rb') as f:
                   pl = plistlib.load(f)
 
-              # حقن الاسم الجديد في اللواحق الأساسية
               pl['CFBundleDisplayName'] = 'ATTACK ستور'
               pl['CFBundleName'] = 'ATTACK ستور'
               pl['CFBundleIdentifier'] = 'app.attack'
 
-              # إجبار النظام على قراءة الأيقونة المنفصلة وتخطي ملف Assets.car
               icon_config = {
                   'CFBundlePrimaryIcon': {
                       'CFBundleIconFiles': ['custom_icon'],
@@ -87,7 +85,6 @@ jobs:
               with open(plist_path, 'wb') as f:
                   plistlib.dump(pl, f, fmt=plistlib.FMT_BINARY)
 
-          # حذف ملفات الأسماء المترجمة القديمة لكي لا تفرض الاسم القديم على السيرفر
           for strings_file in glob.glob(os.path.join(app_dir, '*.lproj', 'InfoPlist.strings')):
               try:
                   os.remove(strings_file)
@@ -95,11 +92,11 @@ jobs:
                   pass
           "
           
-          # 3. دمج الشهادات في المجلد المطلوب
-          mkdir -p "$APP_DIR/EmbeddedCert"
-          cp cert.p12 "$APP_DIR/EmbeddedCert/"
-          cp profile.mobileprovision "$APP_DIR/EmbeddedCert/"
-          echo "${{ github.event.inputs.password }}" > "$APP_DIR/EmbeddedCert/password.txt"
+          # 3. دمج الشهادات وتغيير اسم الشهادة إلى ATTACK STORE ليتعرف عليها كود السويفت
+          mkdir -p "$APP_DIR/signing-assets/ATTACK STORE"
+          cp cert.p12 "$APP_DIR/signing-assets/ATTACK STORE/cert.p12"
+          cp profile.mobileprovision "$APP_DIR/signing-assets/ATTACK STORE/cert.mobileprovision"
+          echo "${{ github.event.inputs.password }}" > "$APP_DIR/signing-assets/ATTACK STORE/cert.txt"
           
           cd extracted_app
           zip -qr ../modified_app.ipa Payload
@@ -120,4 +117,4 @@ jobs:
             sleep 2
           fi
           
-          gh release create "$TAG" signed_app.ipa --title "ATTACK ستور - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح وضبط الهوية الجديدة."
+          gh release create "$TAG" signed_app.ipa --title "ATTACK ستور - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح ودمج شهادة ATTACK STORE تلقائياً."
