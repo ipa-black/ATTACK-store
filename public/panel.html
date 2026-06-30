@@ -57,7 +57,7 @@
             const udid = p12File.name.replace('.p12', '');
             const chatId = tg.initDataUnsafe?.user?.id || "";
 
-            document.getElementById('submitBtn').innerText = "⏳ جاري الرفع لخوادم Vercel...";
+            document.getElementById('submitBtn').innerText = "⏳ جاري الرفع لتوقيع المتجر...";
             document.getElementById('submitBtn').disabled = true;
 
             try {
@@ -71,7 +71,7 @@
                 });
 
                 if (response.ok) {
-                    tg.showAlert("✅ تم إرسال الطلب بنجاح! راجع رسائل البوت.");
+                    tg.showAlert("✅ تم إرسال الطلب لجيت هب بنجاح! راجع رسائل البوت.");
                     tg.close();
                 } else {
                     throw new Error('Server Error');
