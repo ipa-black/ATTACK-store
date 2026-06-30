@@ -3,364 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
     <title>الرئيسية</title>
     <style>
-        :root {
-            --primary-gold: #D4AF37;
-            --gold-glow: rgba(212, 175, 55, 0.3);
-            --bg-dark: #050505;
-            --card-bg: rgba(20, 20, 20, 0.7);
-        }
-
         * {
             box-sizing: border-box;
             -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             user-select: none;
         }
 
         body { 
-            background-color: var(--bg-dark);
+            background-color: #050505;
             background-image: 
-                radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.8), transparent),
-                radial-gradient(2px 2px at 80% 40%, rgba(212,175,55,0.5), transparent),
-                radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1.5px 1.5px at 70% 90%, rgba(255,255,255,0.9), transparent);
-            background-size: 200px 200px;
+                radial-gradient(1.5px 1.5px at 20px 30px, #ffffff, transparent),
+                radial-gradient(2px 2px at 80px 70px, rgba(212, 175, 55, 0.5), transparent),
+                radial-gradient(1px 1px at 220px 40px, #aaaaaa, transparent),
+                radial-gradient(1px 1px at 400px 90px, #dddddd, transparent);
+            background-size: 500px 500px;
+            animation: moveStars 60s linear infinite;
+            
             color: #ffffff; 
             font-family: system-ui, -apple-system, sans-serif; 
             text-align: center; 
-            padding: 40px 15px; 
+            padding: 40px 20px; 
             margin: 0;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        }
+        
+        @keyframes moveStars {
+            0% { background-position: 0 0; }
+            100% { background-position: -500px 500px; }
         }
 
         .container { 
-            width: 100%;
-            max-width: 420px; 
+            max-width: 450px; 
+            margin: 0 auto; 
             position: relative;
             z-index: 10;
         }
         
-        .logo-container {
-            position: relative;
-            margin-bottom: 25px;
-            display: inline-block;
-        }
-
         .svg-logo { 
-            width: 130px; 
-            height: 130px; 
-            filter: drop-shadow(0px 0px 15px var(--gold-glow));
-            transition: transform 0.3s ease;
+            width: 120px; 
+            height: 120px; 
+            margin-bottom: 10px;
+            filter: drop-shadow(0px 0px 10px rgba(212, 175, 55, 0.3));
         }
 
-        .safari-alert {
-            background: rgba(212, 175, 55, 0.05);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .safari-alert p {
-            color: var(--primary-gold); 
-            font-size: 0.8em;
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        .safari-icon {
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: var(--primary-gold);
-            stroke-width: 1.5;
+        .compass-icon {
+            display: inline-block;
+            vertical-align: middle;
+            width: 1.1em;
+            height: 1.1em;
+            margin: 0 2px;
         }
         
-        .btn-primary { 
-            display: block; 
-            background: linear-gradient(135deg, #E5C07B 0%, #D4AF37 100%);
+        .safari-note { 
+            color: #D4AF37; 
+            font-size: 0.75em;
+            margin-bottom: 25px; 
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+        
+        .btn { 
+            display: inline-block; 
+            background: linear-gradient(135deg, #D4AF37 0%, #aa8825 100%);
             color: #000000; 
             padding: 16px 24px; 
             text-decoration: none; 
-            border-radius: 14px; 
-            font-weight: 700; 
-            font-size: 1.15em; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 1.1em; 
             border: none; 
             cursor: pointer; 
             width: 100%; 
-            box-shadow: 0 8px 20px var(--gold-glow);
-            transition: all 0.2s ease;
-            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+            transition: transform 0.2s;
         }
+        .btn:active { transform: scale(0.98); }
         
-        .btn-primary:active { 
-            transform: scale(0.97);
-            box-shadow: 0 4px 10px var(--gold-glow);
-        }
-        
-        .glass-card {
-            background: var(--card-bg); 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 16px; 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            padding: 24px; 
+        .steps { 
+            text-align: right; 
+            background: rgba(17, 17, 17, 0.7); 
+            backdrop-filter: blur(8px);
+            padding: 20px; 
+            border-radius: 12px; 
             margin-top: 25px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(212, 175, 55, 0.1); 
         }
-
-        .steps-list {
-            text-align: right;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .steps-list li {
-            position: relative;
-            padding-right: 35px;
-            margin-bottom: 18px;
-            font-size: 0.9em;
-            line-height: 1.6;
-            color: #d1d1d1;
-        }
-
-        .steps-list li:last-child { margin-bottom: 0; }
-        .steps-list li strong { color: #ffffff; }
+        .steps p { margin: 12px 0; font-size: 0.9em; line-height: 1.6; color: #eee; }
+        .steps strong { color: #fff; }
         
-        .step-number {
-            position: absolute;
-            right: 0;
-            top: 2px;
-            width: 22px;
-            height: 22px;
-            background: rgba(212, 175, 55, 0.1);
-            border: 1px solid var(--primary-gold);
-            color: var(--primary-gold);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75em;
-            font-weight: bold;
+        .result-box { 
+            display: none; 
+            margin-top: 20px; 
+            background: rgba(17, 17, 17, 0.8); 
+            backdrop-filter: blur(10px);
+            padding: 25px 20px; 
+            border-radius: 12px; 
+            border: 1px solid #D4AF37; 
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
         }
-
-        #result-section { display: none; }
-
-        .result-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 15px;
-        }
-
-        .result-header h3 { margin: 0; color: #fff; font-size: 1.1em; }
-        .success-icon { width: 24px; height: 24px; stroke: #4CAF50; fill: none; stroke-width: 2; }
 
         .data-row {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            text-align: left;
-            direction: ltr;
-        }
-
-        .data-row:last-child { margin-bottom: 0; }
-
-        .data-label {
-            font-size: 0.8em;
-            color: #888;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            width: 100%;
-            display: flex;
+            align-items: center;
             justify-content: space-between;
-        }
-
-        .data-value-container {
-            width: 100%;
-            display: flex;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .data-value {
-            flex-grow: 1;
+            background: #000;
             padding: 12px 15px;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            color: var(--primary-gold);
-            font-size: 0.95em;
-            overflow-x: auto;
-            white-space: nowrap;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #222;
         }
+
+        .data-label { color: #888; font-size: 0.85em; font-weight: bold;}
+        .data-value { color: #D4AF37; font-family: monospace; font-size: 1em; direction: ltr; }
 
         .copy-btn {
-            background: rgba(212, 175, 55, 0.15);
-            color: var(--primary-gold);
+            background: #D4AF37;
+            color: #000;
             border: none;
-            border-left: 1px solid rgba(212, 175, 55, 0.3);
-            padding: 0 18px;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.8em;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
-            font-family: inherit;
         }
-
-        .copy-btn:active { background: rgba(212, 175, 55, 0.4); }
+        .copy-btn:active { opacity: 0.8; }
     </style>
 </head>
 <body>
     <div class="container">
         
-        <div class="logo-container">
-            <svg class="svg-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <clipPath id="circleClip"><circle cx="50" cy="50" r="39" /></clipPath>
-                    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#E5C07B" />
-                        <stop offset="100%" stop-color="#D4AF37" />
-                    </linearGradient>
-                </defs>
-                <circle cx="50" cy="50" r="47" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" stroke-dasharray="10 4"/>
-                <circle cx="50" cy="50" r="41" fill="none" stroke="url(#goldGrad)" stroke-width="1"/>
-                <image href="https://up6.cc/2026/06/178281681008481.jpeg" 
-                       x="11" y="11" width="78" height="78" 
-                       clip-path="url(#circleClip)" 
-                       preserveAspectRatio="xMidYMid slice"/>
-            </svg>
-        </div>
+        <svg class="svg-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <clipPath id="circleClip">
+                    <circle cx="50" cy="50" r="38" />
+                </clipPath>
+            </defs>
+            <circle cx="50" cy="50" r="46" fill="none" stroke="#D4AF37" stroke-width="2" stroke-dasharray="8 4"/>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#D4AF37" stroke-width="1"/>
+            <image href="https://up6.cc/2026/06/178281681008481.jpeg" 
+                   x="12" y="12" width="76" height="76" 
+                   clip-path="url(#circleClip)" 
+                   preserveAspectRatio="xMidYMid slice"/>
+        </svg>
         
-        <div class="safari-alert">
-            <svg class="safari-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/>
+        <p class="safari-note">
+            رجاءاً افتح هذه الصفحة في سفاري عن طريق الضغط على البوصلة الموجودة في الاسفل 
+            <svg class="compass-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#D4AF37" stroke-width="1.5"/>
+                <path d="M12 2 L14 12 L12 22 L10 12 Z" fill="#D4AF37" opacity="0.9"/>
+                <circle cx="12" cy="12" r="1.5" fill="#000"/>
             </svg>
-            <p>رجاءاً افتح هذه الصفحة في متصفح سفاري لتجنب أخطاء التثبيت</p>
-        </div>
+        </p>
 
         <div id="setup-section">
-            <a href="/udid.mobileconfig" class="btn-primary">تثبيت الملف التعريفي</a>
+            <a href="/udid.mobileconfig" class="btn">تثبيت الملف التعريفي</a>
             
-            <div class="glass-card">
-                <ul class="steps-list">
-                    <li><span class="step-number">1</span> قم بتنزيل وتثبيت الملف التعريفي.</li>
-                    <li><span class="step-number">2</span> توجه إلى <strong>الإعدادات > عام > VPN وإدارة الجهاز</strong>.</li>
-                    <li><span class="step-number">3</span> بعد التثبيت، ستعود تلقائياً إلى هنا لنسخ بياناتك.</li>
-                </ul>
+            <div class="steps">
+                <p>1️⃣ ثبت الملف التعريفي.</p>
+                <p>2️⃣ توجه الى <strong>الاعدادات > عام > VPN وإدارة الاجهزة</strong>.</p>
+                <p>3️⃣ بعد التثبيت، ستعود الى هنا لنسخ بيانات جهازك.</p>
             </div>
         </div>
 
-        <div id="result-section" class="glass-card">
-            <div class="result-header">
-                <svg class="success-icon" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 12.5l2.5 2.5 5-5"></path>
-                </svg>
-                <h3>تم قراءة البيانات بنجاح</h3>
-            </div>
+        <div id="result-section" class="result-box">
+            <h3 style="margin-top:0; margin-bottom: 25px; color:#fff; text-align: center;">تم قراءة البيانات بنجاح ✅</h3>
             
             <div class="data-row">
-                <div class="data-label"><span>UDID</span></div>
-                <div class="data-value-container">
+                <div>
+                    <div class="data-label">UDID</div>
                     <div class="data-value" id="udid-val"></div>
-                    <button class="copy-btn" onclick="copyData('udid-val')">نسخ</button>
                 </div>
+                <button class="copy-btn" onclick="copyData('udid-val')">نسخ</button>
             </div>
 
             <div class="data-row">
-                <div class="data-label"><span>Device Model</span></div>
-                <div class="data-value-container">
+                <div>
+                    <div class="data-label">نوع الجهاز</div>
                     <div class="data-value" id="product-val"></div>
-                    <button class="copy-btn" onclick="copyData('product-val')">نسخ</button>
                 </div>
+                <button class="copy-btn" onclick="copyData('product-val')">نسخ</button>
             </div>
 
             <div class="data-row">
-                <div class="data-label"><span>iOS Version</span></div>
-                <div class="data-value-container">
+                <div>
+                    <div class="data-label">تحديث iOS</div>
                     <div class="data-value" id="version-val"></div>
-                    <button class="copy-btn" onclick="copyData('version-val')">نسخ</button>
                 </div>
+                <button class="copy-btn" onclick="copyData('version-val')">نسخ</button>
             </div>
         </div>
     </div>
 
     <script>
-        // قاموس ترجمة رموز العتاد إلى الأسماء التجارية لأجهزة أبل
+        // قاموس ترجمة رموز العتاد المعقدة إلى الأسماء الرسمية
         const deviceDictionary = {
+            "iPhone10,3": "iPhone X", "iPhone10,6": "iPhone X",
+            "iPhone11,2": "iPhone XS", "iPhone11,4": "iPhone XS Max", "iPhone11,8": "iPhone XR",
             "iPhone12,1": "iPhone 11", "iPhone12,3": "iPhone 11 Pro", "iPhone12,5": "iPhone 11 Pro Max",
             "iPhone12,8": "iPhone SE (2nd Gen)",
             "iPhone13,1": "iPhone 12 mini", "iPhone13,2": "iPhone 12", "iPhone13,3": "iPhone 12 Pro", "iPhone13,4": "iPhone 12 Pro Max",
             "iPhone14,4": "iPhone 13 mini", "iPhone14,5": "iPhone 13", "iPhone14,2": "iPhone 13 Pro", "iPhone14,3": "iPhone 13 Pro Max",
             "iPhone14,6": "iPhone SE (3rd Gen)",
             "iPhone14,7": "iPhone 14", "iPhone14,8": "iPhone 14 Plus", "iPhone15,2": "iPhone 14 Pro", "iPhone15,3": "iPhone 14 Pro Max",
-            "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus", "iPhone16,1": "iPhone 15 Pro", "iPhone16,2": "iPhone 15 Pro Max",
-            "iPad8,1": "iPad Pro 11-inch", "iPad8,5": "iPad Pro 12.9-inch (3rd Gen)",
-            "iPad13,4": "iPad Pro 11-inch (3rd Gen)", "iPad13,8": "iPad Pro 12.9-inch (5th Gen)"
+            "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus", "iPhone16,1": "iPhone 15 Pro", "iPhone16,2": "iPhone 15 Pro Max"
         };
 
-        // حماية الواجهة
-        const preventAction = (e) => e.preventDefault();
-        document.addEventListener('contextmenu', preventAction);
-        document.addEventListener('selectstart', preventAction);
-        
-        // دالة النسخ الاحترافية
+        // قاموس ترجمة أرقام البناء إلى تحديثات iOS (أهم الإصدارات الأخيرة)
+        const versionDictionary = {
+            "21F90": "iOS 17.5.1",
+            "21F79": "iOS 17.5",
+            "21E237": "iOS 17.4.1",
+            "21E236": "iOS 17.4.1",
+            "21E219": "iOS 17.4",
+            "21D61": "iOS 17.3.1",
+            "21D50": "iOS 17.3",
+            "21C66": "iOS 17.2.1",
+            "21C62": "iOS 17.2",
+            "21B101": "iOS 17.1.2",
+            "21B91": "iOS 17.1.1",
+            "21B74": "iOS 17.1",
+            "21A360": "iOS 17.0"
+        };
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+
         function copyData(elementId) {
             const text = document.getElementById(elementId).innerText;
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text);
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.opacity = "0";
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                textArea.remove();
-            }
+            const tempArea = document.createElement("textarea");
+            tempArea.value = text;
+            tempArea.style.position = "fixed";
+            tempArea.style.opacity = "0";
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            tempArea.remove();
             
-            // تأثير بصري بسيط للزر عند النسخ
+            // تأثير بصري للزر عند النسخ
             const btn = event.target;
             const originalText = btn.innerText;
-            btn.innerText = "✓";
-            btn.style.color = "#4CAF50";
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.color = "var(--primary-gold)";
-            }, 1000);
+            btn.innerText = "✓ تم";
+            setTimeout(() => { btn.innerText = originalText; }, 1000);
         }
 
-        // استخراج وعرض البيانات
         const urlParams = new URLSearchParams(window.location.search);
         const udid = urlParams.get('udid');
-        let product = urlParams.get('product');
-        const version = urlParams.get('version');
+        const productRaw = urlParams.get('product');
+        const versionRaw = urlParams.get('version');
 
         if (udid) {
             document.getElementById('setup-section').style.display = 'none';
             document.getElementById('result-section').style.display = 'block';
             
+            // الترجمة باستخدام القاموس، وإذا لم يكن مسجلاً يعرض الرمز الأصلي
+            const finalProduct = deviceDictionary[productRaw] || productRaw || "غير معروف";
+            let finalVersion = versionDictionary[versionRaw] || versionRaw || "غير معروف";
+            
+            // توضيح للمستخدم إذا أرسلت أبل بناءً غير مسجل في القاموس
+            if (versionRaw && !versionDictionary[versionRaw]) {
+                finalVersion = `(رقم البناء: ${versionRaw})`;
+            }
+
             document.getElementById('udid-val').innerText = udid;
-            // استخدام المترجم، وإذا لم يكن الجهاز في القائمة يتم عرض الرمز كما هو
-            document.getElementById('product-val').innerText = deviceDictionary[product] || product || "غير معروف";
-            document.getElementById('version-val').innerText = version || "غير معروف";
+            document.getElementById('product-val').innerText = finalProduct;
+            document.getElementById('version-val').innerText = finalVersion;
         }
     </script>
 </body>
