@@ -30,11 +30,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install zsign (Super Fast Build)
+      - name: Install Dependencies & Build zsign
         run: |
+          # تثبيت المكتبات اللازمة للبناء
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev build-essential zip unzip
+          
+          # تحميل الأداة وبناؤها مباشرة
           git clone --depth 1 https://github.com/zhlynn/zsign.git
           cd zsign
-          make -j$(nproc)
+          g++ *.cpp common/*.cpp macho/*.cpp -lcrypto -O3 -o zsign
+          chmod +x zsign
           sudo mv zsign /usr/local/bin/
 
       - name: Decode Certs Safely
@@ -44,12 +50,20 @@ jobs:
 
       - name: Extract, Replace Icon & Embed Cert
         run: |
-          unzip -q base_app.ipa -d extracted_app
-          APP_DIR=$(find extracted_app/Payload -name "*.app" | head -n 1)
+          # التأكد من وجود ملف التطبيق
+          if [ ! -f "base_app.ipa" ]; then
+            echo "خطأ: لم يتم العثور على ملف base_app.ipa في المستودع!"
+            exit 1
+          fi
           
+          unzip -q base_app.ipa -d extracted_app
+          APP_DIR=$(find extracted_app/Payload -maxdepth 1 -name "*.app" | head -n 1)
+          
+          # استبدال الأيقونة
           curl -sL "https://up6.cc/2026/06/178282519043891.png" -o custom_icon.png
           find "$APP_DIR" -name "AppIcon*.png" -exec cp custom_icon.png {} \;
           
+          # دمج الشهادة
           mkdir -p "$APP_DIR/EmbeddedCert"
           cp cert.p12 "$APP_DIR/EmbeddedCert/"
           cp profile.mobileprovision "$APP_DIR/EmbeddedCert/"
@@ -69,9 +83,10 @@ jobs:
         run: |
           TAG="attack-${{ github.event.inputs.udid }}"
           
+          # حذف الإصدار القديم إن وجد لتجنب التعارض
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release delete "$TAG" --yes
-            git push origin :refs/tags/$TAG || true
+            gh release delete "$TAG" --yes --cleanup-tag
+            sleep 2
           fi
           
           gh release create "$TAG" signed_app.ipa --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح."
