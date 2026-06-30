@@ -43,14 +43,15 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
   }
 
-  // --- 1. الرد عند رفع الشهادة من الـ Web App ---
+  // --- 1. الرد عند رفع الشهادة من الـ Web App (إن وُجدت) ---
   if (webAppData) {
-      const staticInstallUrl = `https://${vercelDomain}/install.html`; 
+      const udid = webAppData.data || "UNKNOWN_UDID"; 
+      // التوجيه إلى ملف التثبيت الموجود في مجلد api
+      const installUrl = `https://${vercelDomain}/api/install?udid=${udid}`; 
       
       const markup = {
           inline_keyboard: [
-              // style: "primary" يعطي الزر اللون الأزرق
-              [{ text: "📲 تثبيت التطبيق", url: staticInstallUrl, style: "primary" }]
+              [{ text: "📲 تثبيت التطبيق", url: installUrl, style: "primary" }]
           ]
       };
       
@@ -58,7 +59,7 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
   }
 
-  // --- 2. استلام ملفات الشهادة من المحادثة ---
+  // --- 2. استلام ملفات الشهادة واستخراج الـ UDID من الاسم ---
   if (document) {
       const fileName = document.file_name.toLowerCase();
       
@@ -71,9 +72,15 @@ module.exports = async (req, res) => {
                   const filePath = fileData.result.file_path;
                   const fileDownloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
                   
-                  global.signState[chatId] = { step: 'WAITING_CERT_PASSWORD', fileUrl: fileDownloadUrl, fileName: document.file_name };
+                  const extractedUdid = fileName.replace('.p12', '').trim();
                   
-                  await sendMessage(chatId, `🔐 تم استلام شهادة P12 (${document.file_name}).\nيرجى إرسال **الرمز السري (Password)** الخاص بالشهادة الآن:`);
+                  global.signState[chatId] = { 
+                      step: 'WAITING_CERT_PASSWORD', 
+                      fileUrl: fileDownloadUrl, 
+                      udid: extractedUdid 
+                  };
+                  
+                  await sendMessage(chatId, `🔐 تم استلام الشهادة.\nيرجى إرسال **الرمز السري (Password)** الخاص بالشهادة الآن:`);
               } else {
                   await sendMessage(chatId, "❌ حدث خطأ أثناء الوصول للملف.");
               }
@@ -81,7 +88,7 @@ module.exports = async (req, res) => {
               await sendMessage(chatId, "❌ حدث خطأ في الاتصال.");
           }
       } else if (fileName.endsWith('.mobileprovision')) {
-          await sendMessage(chatId, `✅ تم استلام ملف Provision (${document.file_name}).`);
+          await sendMessage(chatId, `✅ تم استلام ملف Provision.`);
       } else if (fileName.endsWith('.ipa')) {
           await sendMessage(chatId, "⏳ تم استلام تطبيق بصيغة IPA، جاري التجهيز...");
       } else {
@@ -92,21 +99,19 @@ module.exports = async (req, res) => {
 
   // --- 3. الرد بعد إدخال الرمز السري للشهادة ---
   if (global.signState[chatId]?.step === 'WAITING_CERT_PASSWORD' && text && !text.startsWith('/')) {
-      const certPassword = text;
-      const fileName = global.signState[chatId].fileName;
+      const udid = global.signState[chatId].udid;
       
       delete global.signState[chatId]; 
       
-      const staticInstallUrl = `https://${vercelDomain}/install.html`; 
+      // التوجيه إلى ملف التثبيت الموجود في مجلد api
+      const installUrl = `https://${vercelDomain}/api/install?udid=${udid}`; 
       const markup = {
           inline_keyboard: [
-              // style: "primary" يعطي الزر اللون الأزرق
-              [{ text: "📲 تثبيت التطبيق", url: staticInstallUrl, style: "primary" }]
+              [{ text: "📲 تثبيت التطبيق", url: installUrl, style: "primary" }]
           ]
       };
       
       await sendMessage(chatId, "✅ تم تفعيل اشتراكك", markup);
-      
       return res.status(200).send('OK');
   }
 
@@ -169,11 +174,10 @@ module.exports = async (req, res) => {
 
   // --- 5. واجهة "الرئيسية" ---
   if (text.startsWith('/start') || text === '/panel') {
-    const panelUrl = `https://${vercelDomain}/panel.html`;
-    const udidUrl = `https://${vercelDomain}/`; 
+    // التوجيه إلى ملف الاستخراج الموجود في مجلد api
+    const udidUrl = `https://${vercelDomain}/api/enroll`; 
     
     let inline_keyboard = [
-      [{ text: "🧭 فتح لوحة التحكم", url: panelUrl, style: "primary" }], 
       [{ text: "🌐 استخراج UDID", url: udidUrl, style: "success" }]      
     ];
 
@@ -183,7 +187,7 @@ module.exports = async (req, res) => {
 
     const markup = { inline_keyboard };
 
-    await sendMessage(chatId, "أهلاً بك في **الرئيسية** 🚀\nقم بفتح اللوحة، أو حوّل ملف الشهادة (.p12) ليبدأ البوت بالعمل:", markup);
+    await sendMessage(chatId, "أهلاً بك في **الرئيسية** 🚀\nقم باستخراج UDID، أو حوّل ملف الشهادة (.p12) ليبدأ البوت بالعمل:", markup);
   }
 
   res.status(200).send('OK');
