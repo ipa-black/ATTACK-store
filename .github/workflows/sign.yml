@@ -28,18 +28,17 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Download Precompiled zsign
+      - name: Install zsign (Super Fast Build)
         run: |
-          # تحميل نسخة تنفيذية جاهزة مباشرة بدلاً من بنائها لتوفير الوقت واختصار الخطوات
-          curl -sL "https://github.com/Paisseon/zsign/releases/download/v1.0/zsign" -o zsign
-          chmod +x zsign
+          git clone --depth 1 https://github.com/zhlynn/zsign.git
+          cd zsign
+          make -j$(nproc)
           sudo mv zsign /usr/local/bin/
 
       - name: Decode Certs Safely
         run: |
-          # استخدام printf يضمن عدم تشويه نصوص الـ Base64 الكبيرة للشهادات
           printf "%s" "${{ github.event.inputs.p12_base64 }}" | base64 -d > cert.p12
           printf "%s" "${{ github.event.inputs.provision_base64 }}" | base64 -d > profile.mobileprovision
 
