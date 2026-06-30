@@ -15,7 +15,7 @@
     <key>PayloadOrganization</key>
     <string>ATTACK STORE</string>
     <key>PayloadDisplayName</key>
-    <string>الرئيسية</string>
+    <string>ATTACK STORE</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadUUID</key>
