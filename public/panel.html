@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATTACK STORE PANEL</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; background-color: var(--tg-theme-bg-color, #1a1a1a); color: var(--tg-theme-text-color, #fff); padding: 20px; text-align: center; }
+        .box { background: rgba(0, 255, 136, 0.1); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid rgba(0,255,136,0.3); text-align: right; }
+        input[type="file"], input[type="text"] { width: 90%; padding: 12px; margin-top: 10px; border-radius: 10px; border: none; outline: none; background: #333; color: #fff; box-sizing: border-box; }
+        .btn { background: #00ff88; color: #000; padding: 15px; width: 100%; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
+        .btn:disabled { background: #555; color: #888; box-shadow: none; }
+    </style>
+</head>
+<body>
+    <h2>ATTACK STORE ⚔️</h2>
+    <div class="box">
+        <label>📁 ملف الشهادة (.p12)</label><br>
+        <span style="font-size: 11px; color: #00ff88;">(يجب أن يكون اسم الملف هو الـ UDID)</span>
+        <input type="file" id="p12" accept=".p12">
+    </div>
+    <div class="box">
+        <label>📄 ملف البروفيجن (.mobileprovision)</label>
+        <input type="file" id="prov" accept=".mobileprovision">
+    </div>
+    <div class="box">
+        <label>🔑 باسورد الشهادة</label>
+        <input type="text" id="password" placeholder="اكتب الباسورد هنا...">
+    </div>
+    
+    <button class="btn" id="submitBtn" onclick="sendData()">🚀 توقيع المتجر الآن</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        async function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function sendData() {
+            const p12File = document.getElementById('p12').files[0];
+            const provFile = document.getElementById('prov').files[0];
+            const password = document.getElementById('password').value;
+
+            if (!p12File || !provFile || !password) {
+                tg.showAlert("⚠️ يرجى إرفاق جميع الملفات وكلمة السر!");
+                return;
+            }
+
+            const udid = p12File.name.replace('.p12', '');
+            const chatId = tg.initDataUnsafe?.user?.id || "";
+
+            document.getElementById('submitBtn').innerText = "⏳ جاري الرفع لخوادم Vercel...";
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                const p12Base64 = await fileToBase64(p12File);
+                const provBase64 = await fileToBase64(provFile);
+
+                const response = await fetch('/api/trigger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ p12Base64, provBase64, password, udid, chatId })
+                });
+
+                if (response.ok) {
+                    tg.showAlert("✅ تم إرسال الطلب بنجاح! راجع رسائل البوت.");
+                    tg.close();
+                } else {
+                    throw new Error('Server Error');
+                }
+            } catch (error) {
+                tg.showAlert("❌ حدث خطأ أثناء الرفع.");
+                document.getElementById('submitBtn').innerText = "إعادة المحاولة";
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
