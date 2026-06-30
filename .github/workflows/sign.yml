@@ -21,7 +21,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   sign_and_release:
@@ -31,34 +30,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install Core Dependencies
+      - name: Build and Install zsign
         run: |
           sudo apt-get update
-          sudo apt-get install -y zip unzip jq libssl-dev uuid-dev
-
-      - name: Cache zsign Tool
-        id: cache-zsign
-        uses: actions/cache@v3
-        with:
-          path: zsign_bin/zsign
-          key: zsign-ubuntu-compiled-v1
-
-      - name: Build zsign from Source (If not cached)
-        if: steps.cache-zsign.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y build-essential cmake libssl-dev uuid-dev libzip-dev zip unzip
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          g++ *.cpp common/*.cpp -lcrypto -O3 -o zsign
-          cd ..
-          mkdir -p zsign_bin
-          mv zsign/zsign zsign_bin/
-          chmod +x zsign_bin/zsign
-
-      - name: Setup zsign Global Command
-        run: |
-          sudo cp zsign_bin/zsign /usr/local/bin/zsign
-          sudo chmod +x /usr/local/bin/zsign
+          mkdir build && cd build
+          cmake ..
+          make
+          sudo cp zsign /usr/local/bin/
 
       - name: Decode Certs
         run: |
@@ -70,7 +51,8 @@ jobs:
           unzip -q base_app.ipa -d extracted_app
           APP_DIR=$(find extracted_app/Payload -name "*.app" | head -n 1)
           
-          curl -sL "https://up6.cc/2026/06/178282519043891.png" -o custom_icon.png
+          # استدعاء الصورة من مجلد public واستبدال الأيقونات بها
+          cp public/image.png custom_icon.png
           find "$APP_DIR" -name "AppIcon*.png" -exec cp custom_icon.png {} \;
           
           mkdir -p "$APP_DIR/EmbeddedCert"
@@ -82,9 +64,9 @@ jobs:
           zip -qr ../modified_app.ipa Payload
           cd ..
 
-      - name: Sign IPA (ATTACK STORE & app.attack)
+      - name: Sign IPA
         run: |
-          zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "ATTACK STORE" modified_app.ipa -o signed_app.ipa
+          zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "الرئيسية" modified_app.ipa -o signed_app.ipa
 
       - name: Create/Update GitHub Release
         env:
@@ -97,4 +79,5 @@ jobs:
             git push origin :refs/tags/$TAG || true
           fi
           
-          gh release create "$TAG" signed_app.ipa --title "ATTACK STORE - ${{ github.event.inputs.udid }}" --notes "نسخة مدمجة وموقعة تلقائياً."
+          # الرفع للريليز كملف IPA فقط
+          gh release create "$TAG" signed_app.ipa --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح."
