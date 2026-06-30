@@ -33,7 +33,7 @@ jobs:
       - name: Install Dependencies & Build zsign
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev build-essential zip unzip
+          sudo apt-get install -y libssl-dev build-essential zip unzip python3
           
           git clone --depth 1 https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
@@ -45,7 +45,7 @@ jobs:
           printf "%s" "${{ github.event.inputs.p12_base64 }}" | base64 -d > cert.p12
           printf "%s" "${{ github.event.inputs.provision_base64 }}" | base64 -d > profile.mobileprovision
 
-      - name: Extract, Replace Icon & Embed Cert
+      - name: Extract, Deep Patch Name/Icon & Embed Cert
         run: |
           if [ ! -f "base_app.ipa" ]; then
             echo "خطأ: لم يتم العثور على ملف base_app.ipa في المستودع!"
@@ -55,10 +55,47 @@ jobs:
           unzip -q base_app.ipa -d extracted_app
           APP_DIR=$(find extracted_app/Payload -maxdepth 1 -name "*.app" | head -n 1)
           
-          # تغيير رابط الأيقونة إلى الرابط الجديد الذي أرسلته
-          curl -sL "https://up6.cc/2026/06/178283429697381.png" -o custom_icon.png
-          find "$APP_DIR" -name "AppIcon*.png" -exec cp custom_icon.png {} \;
+          # 1. تحميل الأيقونة الجديدة وحفظها باسم ثابت داخل جذر التطبيق
+          curl -sL "https://up6.cc/2026/06/178283429697381.png" -o "$APP_DIR/custom_icon.png"
           
+          # 2. تشغيل سكربت بايثون لتعديل ملفات النظام وتخطي حماية حزمة الأيقونات والأسماء المترجمة
+          python3 -c "
+          import plistlib, os, glob
+
+          app_dir = '$APP_DIR'
+          plist_path = os.path.join(app_dir, 'Info.plist')
+
+          if os.path.exists(plist_path):
+              with open(plist_path, 'rb') as f:
+                  pl = plistlib.load(f)
+
+              # حقن الاسم الجديد في اللواحق الأساسية
+              pl['CFBundleDisplayName'] = 'ATTACK ستور'
+              pl['CFBundleName'] = 'ATTACK ستور'
+              pl['CFBundleIdentifier'] = 'app.attack'
+
+              # إجبار النظام على قراءة الأيقونة المنفصلة وتخطي ملف Assets.car
+              icon_config = {
+                  'CFBundlePrimaryIcon': {
+                      'CFBundleIconFiles': ['custom_icon'],
+                      'CFBundleIconName': 'custom_icon'
+                  }
+              }
+              pl['CFBundleIcons'] = icon_config
+              pl['CFBundleIcons~ipad'] = icon_config
+
+              with open(plist_path, 'wb') as f:
+                  plistlib.dump(pl, f, fmt=plistlib.FMT_BINARY)
+
+          # حذف ملفات الأسماء المترجمة القديمة لكي لا تفرض الاسم القديم على السيرفر
+          for strings_file in glob.glob(os.path.join(app_dir, '*.lproj', 'InfoPlist.strings')):
+              try:
+                  os.remove(strings_file)
+              except:
+                  pass
+          "
+          
+          # 3. دمج الشهادات في المجلد المطلوب
           mkdir -p "$APP_DIR/EmbeddedCert"
           cp cert.p12 "$APP_DIR/EmbeddedCert/"
           cp profile.mobileprovision "$APP_DIR/EmbeddedCert/"
@@ -70,7 +107,6 @@ jobs:
 
       - name: Sign IPA
         run: |
-          # تم تغيير البندل إلى app.attack واسم التطبيق إلى ATTACK ستور
           zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "ATTACK ستور" modified_app.ipa -o signed_app.ipa
 
       - name: Create GitHub Release
@@ -84,5 +120,4 @@ jobs:
             sleep 2
           fi
           
-          # تم تغيير عنوان الريليز ليصبح ATTACK ستور بدلاً من الرئيسية
-          gh release create "$TAG" signed_app.ipa --title "ATTACK ستور - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح."
+          gh release create "$TAG" signed_app.ipa --title "ATTACK ستور - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح وضبط الهوية الجديدة."
