@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
       chatId = String(message.chat.id);
       text = message.text ? message.text.trim() : '';
       document = message.document;
-      webAppData = message.web_app_data; // التقاط البيانات القادمة من الـ Web App
+      webAppData = message.web_app_data; 
   } else if (callbackQuery) {
       chatId = String(callbackQuery.message.chat.id);
       text = callbackQuery.data;
@@ -21,7 +21,6 @@ module.exports = async (req, res) => {
   const vercelDomain = process.env.VERCEL_DOMAIN; 
   const mainAdminId = String(process.env.ADMIN_ID); 
 
-  // --- نظام تخزين المشرفين، وحالة التوقيع ---
   if (!global.moderators) global.moderators = {}; 
   if (!global.adminState) global.adminState = {};
   if (!global.signState) global.signState = {};
@@ -44,19 +43,18 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
   }
 
-  // --- 1. معالجة البيانات القادمة من الـ Web App ---
+  // --- 1. الرد عند رفع الشهادة من الـ Web App ---
   if (webAppData) {
-      // عندما يقوم المستخدم برفع الشهادة والتوقيع من خلال لوحة الـ Mini App
-      // صفحة الروابط الثابتة لتجنب أخطاء توليد الـ Manifest
       const staticInstallUrl = `https://${vercelDomain}/install.html`; 
       
       const markup = {
           inline_keyboard: [
-              [{ text: "📲 تثبيت عبر سفاري", url: staticInstallUrl, style: "success" }]
+              // style: "primary" يعطي الزر اللون الأزرق
+              [{ text: "📲 تثبيت التطبيق", url: staticInstallUrl, style: "primary" }]
           ]
       };
       
-      await sendMessage(chatId, "✅ تم استلام بيانات الشهادة من لوحة التحكم وبدء التجهيز!\nيمكنك التثبيت عبر سفاري من خلال الروابط أدناه:", markup);
+      await sendMessage(chatId, "✅ تم تفعيل اشتراكك", markup);
       return res.status(200).send('OK');
   }
 
@@ -83,31 +81,31 @@ module.exports = async (req, res) => {
               await sendMessage(chatId, "❌ حدث خطأ في الاتصال.");
           }
       } else if (fileName.endsWith('.mobileprovision')) {
-          await sendMessage(chatId, `✅ تم استلام ملف Provision (${document.file_name}). الملف جاهز للدمج.`);
+          await sendMessage(chatId, `✅ تم استلام ملف Provision (${document.file_name}).`);
       } else if (fileName.endsWith('.ipa')) {
-          await sendMessage(chatId, "⏳ تم استلام تطبيق بصيغة IPA، جاري تجهيزه للتوقيع...");
+          await sendMessage(chatId, "⏳ تم استلام تطبيق بصيغة IPA، جاري التجهيز...");
       } else {
           await sendMessage(chatId, "⚠️ يرجى إرسال ملفات الشهادة (.p12, .mobileprovision) أو تطبيقات (.ipa) فقط.");
       }
       return res.status(200).send('OK');
   }
 
-  // --- 3. استلام الرمز السري والرد بزر التثبيت ---
+  // --- 3. الرد بعد إدخال الرمز السري للشهادة ---
   if (global.signState[chatId]?.step === 'WAITING_CERT_PASSWORD' && text && !text.startsWith('/')) {
       const certPassword = text;
       const fileName = global.signState[chatId].fileName;
       
       delete global.signState[chatId]; 
       
-      // توجيه لصفحة الروابط الثابتة المباشرة
       const staticInstallUrl = `https://${vercelDomain}/install.html`; 
       const markup = {
           inline_keyboard: [
-              [{ text: "📲 تثبيت عبر سفاري", url: staticInstallUrl, style: "success" }]
+              // style: "primary" يعطي الزر اللون الأزرق
+              [{ text: "📲 تثبيت التطبيق", url: staticInstallUrl, style: "primary" }]
           ]
       };
       
-      await sendMessage(chatId, `✅ تم استلام الرمز السري للشهادة (${fileName}) بنجاح!\nالملف والرمز جاهزان.\nاضغط على الزر أدناه للتثبيت مباشرة عبر سفاري:`, markup);
+      await sendMessage(chatId, "✅ تم تفعيل اشتراكك", markup);
       
       return res.status(200).send('OK');
   }
