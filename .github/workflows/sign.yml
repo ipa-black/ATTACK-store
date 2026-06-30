@@ -1,0 +1,79 @@
+name: ATTACK STORE Dynamic Signer
+
+on:
+  workflow_dispatch:
+    inputs:
+      p12_base64:
+        description: 'P12 Certificate'
+        required: true
+      provision_base64:
+        description: 'MobileProvision'
+        required: true
+      password:
+        description: 'Certificate Password'
+        required: true
+      chat_id:
+        description: 'Telegram Chat ID'
+        required: true
+      udid:
+        description: 'Device UDID'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  sign_and_release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install zsign & dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip unzip curl
+          wget https://github.com/zhlynn/zsign/releases/download/v1.1.4/zsign_ubuntu.zip
+          unzip zsign_ubuntu.zip
+          sudo mv zsign /usr/local/bin/
+          sudo chmod +x /usr/local/bin/zsign
+
+      - name: Decode Certs
+        run: |
+          echo "${{ github.event.inputs.p12_base64 }}" | base64 --decode > cert.p12
+          echo "${{ github.event.inputs.provision_base64 }}" | base64 --decode > profile.mobileprovision
+
+      - name: Extract, Replace Icon & Embed Cert
+        run: |
+          unzip -q base_app.ipa -d extracted_app
+          APP_DIR=$(find extracted_app/Payload -name "*.app" | head -n 1)
+          
+          curl -sL "https://up6.cc/2026/06/178282519043891.png" -o custom_icon.png
+          find "$APP_DIR" -name "AppIcon*.png" -exec cp custom_icon.png {} \;
+          
+          mkdir -p "$APP_DIR/EmbeddedCert"
+          cp cert.p12 "$APP_DIR/EmbeddedCert/"
+          cp profile.mobileprovision "$APP_DIR/EmbeddedCert/"
+          echo "${{ github.event.inputs.password }}" > "$APP_DIR/EmbeddedCert/password.txt"
+          
+          cd extracted_app
+          zip -qr ../modified_app.ipa Payload
+          cd ..
+
+      - name: Sign IPA (ATTACK STORE & app.attack)
+        run: |
+          zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "ATTACK STORE" modified_app.ipa -o signed_app.ipa
+
+      - name: Create/Update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="attack-${{ github.event.inputs.udid }}"
+          
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes
+            git push origin :refs/tags/$TAG || true
+          fi
+          
+          gh release create "$TAG" signed_app.ipa --title "ATTACK STORE - ${{ github.event.inputs.udid }}" --notes "نسخة مدمجة وموقعة تلقائياً."
