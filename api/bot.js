@@ -9,6 +9,7 @@ module.exports = async (req, res) => {
     const vercelDomain = process.env.VERCEL_DOMAIN; 
     const adminId = process.env.ADMIN_ID; 
 
+    // حماية البوت
     if (String(chatId) !== String(adminId)) {
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
@@ -19,8 +20,8 @@ module.exports = async (req, res) => {
     }
 
     if (text === '/start' || text === '/panel') {
-      // تم تعديل المسار هنا ليتوجه مباشرة للملف لتفادي خطأ 404
-      const panelUrl = `https://${vercelDomain}/public/panel.html`;
+      // 🟢 تم تصحيح المسار هنا (Vercel يحذف كلمة public تلقائياً)
+      const panelUrl = `https://${vercelDomain}/panel.html`;
       
       const payload = {
         chat_id: chatId,
