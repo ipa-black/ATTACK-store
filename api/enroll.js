@@ -14,16 +14,18 @@ export default async function handler(req, res) {
         for await (const chunk of req) {
             chunks.push(chunk);
         }
-        
-        // دمج الحزم وتحويلها إلى نصوص بشكل يسهل قراءته
-        const buffer = Buffer.concat(chunks);
-        const body = buffer.toString('utf8');
+        // دمج الحزم القادمة من أبل
+        const body = Buffer.concat(chunks).toString('utf8');
 
-        // خوارزمية بحث متقدمة تتجاهل المسافات والرموز المشفرة بين الوسوم
+        // خوارزمية استخراج تنظف الأحرف غير المرئية 
         const extractValue = (key) => {
-            const regex = new RegExp(`<key>${key}</key>[\\s\\S]*?<string>(.*?)</string>`);
+            const regex = new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`);
             const match = body.match(regex);
-            return match ? match[1] : 'غير معروف';
+            if (match) {
+                // إزالة أي رموز غير مقروءة لضمان عمل المترجم
+                return match[1].replace(/[^a-zA-Z0-9,._-]/g, '');
+            }
+            return '';
         };
 
         const udid = extractValue('UDID');
@@ -32,14 +34,13 @@ export default async function handler(req, res) {
 
         const host = req.headers.host;
         const redirectProtocol = host.includes('localhost') ? 'http' : 'https';
-        // ترميز البيانات لتجنب أي أخطاء في مسار الرابط
-        const redirectUrl = `${redirectProtocol}://${host}/?udid=${encodeURIComponent(udid)}&product=${encodeURIComponent(product)}&version=${encodeURIComponent(version)}`;
+        const redirectUrl = `${redirectProtocol}://${host}/?udid=${udid}&product=${product}&version=${version}`;
 
         res.writeHead(301, { Location: redirectUrl });
         res.end();
         
     } catch (error) {
-        console.error("Error parsing profile payload:", error);
+        console.error("Error processing Apple MDM request:", error);
         res.status(500).send('Internal Server Error');
     }
 }
