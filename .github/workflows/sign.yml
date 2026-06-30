@@ -1,4 +1,4 @@
-name: ATTACK STORE Static Signer
+name: ATTACK STORE Dynamic Signer
 
 on:
   workflow_dispatch:
@@ -33,13 +33,9 @@ jobs:
       - name: Build and Install zsign
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libssl-dev uuid-dev libzip-dev zip unzip
-          git clone https://github.com/zhlynn/zsign.git zsign-src
-          cd zsign-src
-          # تم تغيير اسم المجلد لتفادي تعارض File exists
-          mkdir build_dir
-          cd build_dir
-          cmake ..
+          sudo apt-get install -y build-essential libssl-dev uuid-dev zip unzip curl
+          git clone https://github.com/zhlynn/zsign.git
+          cd zsign
           make
           sudo cp zsign /usr/local/bin/
 
@@ -69,49 +65,7 @@ jobs:
         run: |
           zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "الرئيسية" modified_app.ipa -o signed_app.ipa
 
-      - name: Generate 12 Static Manifests
-        run: |
-          TAG="attack-${{ github.event.inputs.udid }}"
-          IPA_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/signed_app.ipa"
-          
-          mkdir -p manifests
-          for i in {1..12}; do
-            cat <<EOF > manifests/manifest_${i}.plist
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-            <dict>
-                <key>items</key>
-                <array>
-                    <dict>
-                        <key>assets</key>
-                        <array>
-                            <dict>
-                                <key>kind</key>
-                                <string>software-package</string>
-                                <key>url</key>
-                                <string>${IPA_URL}</string>
-                            </dict>
-                        </array>
-                        <key>metadata</key>
-                        <dict>
-                            <key>bundle-identifier</key>
-                            <string>app.attack</string>
-                            <key>bundle-version</key>
-                            <string>1.0.0</string>
-                            <key>kind</key>
-                            <string>software</string>
-                            <key>title</key>
-                            <string>الرئيسية</string>
-                        </dict>
-                    </dict>
-                </array>
-            </dict>
-            </plist>
-            EOF
-          done
-
-      - name: Create/Update GitHub Release
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -122,4 +76,4 @@ jobs:
             git push origin :refs/tags/$TAG || true
           fi
           
-          gh release create "$TAG" signed_app.ipa manifests/manifest_*.plist --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع باستخدام 12 رابط تثبيت ثابت."
+          gh release create "$TAG" signed_app.ipa --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح."
