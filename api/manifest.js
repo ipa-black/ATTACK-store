@@ -7,6 +7,8 @@ module.exports = (req, res) => {
 
   // رابط التطبيق الموقّع المباشر من الريليز الخاص بهذا الجهاز
   const ipaUrl = `https://github.com/${githubRepo}/releases/download/attack-${udid}/signed_app.ipa`;
+  // رابط أيقونة التطبيق الجديدة لكي تظهر أثناء التثبيت
+  const iconUrl = `https://up6.cc/2026/06/178283429697381.png`;
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -23,6 +25,22 @@ module.exports = (req, res) => {
                     <key>url</key>
                     <string>${ipaUrl}</string>
                 </dict>
+                <dict>
+                    <key>kind</key>
+                    <string>display-image</string>
+                    <key>needs-shine</key>
+                    <true/>
+                    <key>url</key>
+                    <string>${iconUrl}</string>
+                </dict>
+                <dict>
+                    <key>kind</key>
+                    <string>full-size-image</string>
+                    <key>needs-shine</key>
+                    <true/>
+                    <key>url</key>
+                    <string>${iconUrl}</string>
+                </dict>
             </array>
             <key>metadata</key>
             <dict>
@@ -33,7 +51,7 @@ module.exports = (req, res) => {
                 <key>kind</key>
                 <string>software</string>
                 <key>title</key>
-                <string>attack ستور</string>
+                <string>ATTACK ستور</string>
             </dict>
         </dict>
     </array>
