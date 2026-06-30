@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   sign_and_release:
@@ -30,13 +31,33 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install zsign & dependencies
+      - name: Install Core Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y zip unzip curl
-          wget https://github.com/zhlynn/zsign/releases/download/v1.1.4/zsign_ubuntu.zip
-          unzip zsign_ubuntu.zip
-          sudo mv zsign /usr/local/bin/
+          sudo apt-get install -y zip unzip jq libssl-dev uuid-dev
+
+      - name: Cache zsign Tool
+        id: cache-zsign
+        uses: actions/cache@v3
+        with:
+          path: zsign_bin/zsign
+          key: zsign-ubuntu-compiled-v1
+
+      - name: Build zsign from Source (If not cached)
+        if: steps.cache-zsign.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y build-essential
+          git clone https://github.com/zhlynn/zsign.git
+          cd zsign
+          g++ *.cpp common/*.cpp -lcrypto -O3 -o zsign
+          cd ..
+          mkdir -p zsign_bin
+          mv zsign/zsign zsign_bin/
+          chmod +x zsign_bin/zsign
+
+      - name: Setup zsign Global Command
+        run: |
+          sudo cp zsign_bin/zsign /usr/local/bin/zsign
           sudo chmod +x /usr/local/bin/zsign
 
       - name: Decode Certs
