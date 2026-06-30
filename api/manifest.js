@@ -33,7 +33,7 @@ module.exports = (req, res) => {
                 <key>kind</key>
                 <string>software</string>
                 <key>title</key>
-                <string>الرئيسية</string>
+                <string>attack ستور</string>
             </dict>
         </dict>
     </array>
