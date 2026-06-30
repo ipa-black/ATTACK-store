@@ -50,12 +50,19 @@
             filter: drop-shadow(0px 0px 10px rgba(212, 175, 55, 0.3));
         }
 
-        .compass-icon {
+        .compass-icon,
+        .step-icon,
+        .check-icon {
             display: inline-block;
             vertical-align: middle;
             width: 1.1em;
             height: 1.1em;
             margin: 0 2px;
+        }
+
+        .check-icon {
+            width: 1em;
+            height: 1em;
         }
         
         .safari-note { 
@@ -163,14 +170,38 @@
             <a href="/udid.mobileconfig" class="btn">تثبيت الملف التعريفي</a>
             
             <div class="steps">
-                <p>1️⃣ ثبت الملف التعريفي.</p>
-                <p>2️⃣ توجه الى <strong>الاعدادات > عام > VPN وإدارة الاجهزة</strong>.</p>
-                <p>3️⃣ بعد التثبيت، ستعود الى هنا لنسخ بيانات جهازك.</p>
+                <p>
+                    <svg class="step-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#D4AF37" stroke-width="1.5" fill="none"/>
+                        <text x="12" y="16.5" text-anchor="middle" fill="#D4AF37" font-size="11" font-weight="bold" font-family="sans-serif">1</text>
+                    </svg>
+                    ثبت الملف التعريفي.
+                </p>
+                <p>
+                    <svg class="step-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#D4AF37" stroke-width="1.5" fill="none"/>
+                        <text x="12" y="16.5" text-anchor="middle" fill="#D4AF37" font-size="11" font-weight="bold" font-family="sans-serif">2</text>
+                    </svg>
+                    توجه الى <strong>الاعدادات > عام > VPN وإدارة الاجهزة</strong>.
+                </p>
+                <p>
+                    <svg class="step-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="#D4AF37" stroke-width="1.5" fill="none"/>
+                        <text x="12" y="16.5" text-anchor="middle" fill="#D4AF37" font-size="11" font-weight="bold" font-family="sans-serif">3</text>
+                    </svg>
+                    بعد التثبيت، ستعود الى هنا لنسخ بيانات جهازك.
+                </p>
             </div>
         </div>
 
         <div id="result-section" class="result-box">
-            <h3 style="margin-top:0; margin-bottom: 25px; color:#fff; text-align: center;">تم قراءة البيانات بنجاح ✅</h3>
+            <h3 style="margin-top:0; margin-bottom: 25px; color:#fff; text-align: center;">
+                تم استخراج البيانات بنجاح 
+                <svg class="check-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="#D4AF37" stroke-width="1.5" fill="none"/>
+                    <path d="M8 12.5l2.5 2.5 5-5" stroke="#D4AF37" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </h3>
             
             <div class="data-row">
                 <div>
@@ -187,19 +218,10 @@
                 </div>
                 <button class="copy-btn" onclick="copyData('product-val')">نسخ</button>
             </div>
-
-            <div class="data-row">
-                <div>
-                    <div class="data-label">تحديث iOS</div>
-                    <div class="data-value" id="version-val"></div>
-                </div>
-                <button class="copy-btn" onclick="copyData('version-val')">نسخ</button>
-            </div>
         </div>
     </div>
 
     <script>
-        // قاموس ترجمة رموز العتاد المعقدة إلى الأسماء الرسمية
         const deviceDictionary = {
             "iPhone10,3": "iPhone X", "iPhone10,6": "iPhone X",
             "iPhone11,2": "iPhone XS", "iPhone11,4": "iPhone XS Max", "iPhone11,8": "iPhone XR",
@@ -210,23 +232,6 @@
             "iPhone14,6": "iPhone SE (3rd Gen)",
             "iPhone14,7": "iPhone 14", "iPhone14,8": "iPhone 14 Plus", "iPhone15,2": "iPhone 14 Pro", "iPhone15,3": "iPhone 14 Pro Max",
             "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus", "iPhone16,1": "iPhone 15 Pro", "iPhone16,2": "iPhone 15 Pro Max"
-        };
-
-        // قاموس ترجمة أرقام البناء إلى تحديثات iOS (أهم الإصدارات الأخيرة)
-        const versionDictionary = {
-            "21F90": "iOS 17.5.1",
-            "21F79": "iOS 17.5",
-            "21E237": "iOS 17.4.1",
-            "21E236": "iOS 17.4.1",
-            "21E219": "iOS 17.4",
-            "21D61": "iOS 17.3.1",
-            "21D50": "iOS 17.3",
-            "21C66": "iOS 17.2.1",
-            "21C62": "iOS 17.2",
-            "21B101": "iOS 17.1.2",
-            "21B91": "iOS 17.1.1",
-            "21B74": "iOS 17.1",
-            "21A360": "iOS 17.0"
         };
 
         document.addEventListener('contextmenu', e => e.preventDefault());
@@ -243,34 +248,24 @@
             document.execCommand('copy');
             tempArea.remove();
             
-            // تأثير بصري للزر عند النسخ
             const btn = event.target;
             const originalText = btn.innerText;
-            btn.innerText = "✓ تم";
+            btn.innerText = "تم";
             setTimeout(() => { btn.innerText = originalText; }, 1000);
         }
 
         const urlParams = new URLSearchParams(window.location.search);
         const udid = urlParams.get('udid');
         const productRaw = urlParams.get('product');
-        const versionRaw = urlParams.get('version');
 
         if (udid) {
             document.getElementById('setup-section').style.display = 'none';
             document.getElementById('result-section').style.display = 'block';
             
-            // الترجمة باستخدام القاموس، وإذا لم يكن مسجلاً يعرض الرمز الأصلي
             const finalProduct = deviceDictionary[productRaw] || productRaw || "غير معروف";
-            let finalVersion = versionDictionary[versionRaw] || versionRaw || "غير معروف";
-            
-            // توضيح للمستخدم إذا أرسلت أبل بناءً غير مسجل في القاموس
-            if (versionRaw && !versionDictionary[versionRaw]) {
-                finalVersion = `(رقم البناء: ${versionRaw})`;
-            }
 
             document.getElementById('udid-val').innerText = udid;
             document.getElementById('product-val').innerText = finalProduct;
-            document.getElementById('version-val').innerText = finalVersion;
         }
     </script>
 </body>
