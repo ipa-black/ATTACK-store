@@ -1,4 +1,4 @@
-name: ATTACK STORE Dynamic Signer
+name: ATTACK STORE Static Signer
 
 on:
   workflow_dispatch:
@@ -34,9 +34,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libssl-dev uuid-dev libzip-dev zip unzip
-          git clone https://github.com/zhlynn/zsign.git
-          cd zsign
-          mkdir build && cd build
+          git clone https://github.com/zhlynn/zsign.git zsign-src
+          cd zsign-src
+          # تم تغيير اسم المجلد لتفادي تعارض File exists
+          mkdir build_dir
+          cd build_dir
           cmake ..
           make
           sudo cp zsign /usr/local/bin/
@@ -51,8 +53,7 @@ jobs:
           unzip -q base_app.ipa -d extracted_app
           APP_DIR=$(find extracted_app/Payload -name "*.app" | head -n 1)
           
-          # استدعاء الصورة من مجلد public واستبدال الأيقونات بها
-          cp public/image.png custom_icon.png
+          curl -sL "https://up6.cc/2026/06/178282519043891.png" -o custom_icon.png
           find "$APP_DIR" -name "AppIcon*.png" -exec cp custom_icon.png {} \;
           
           mkdir -p "$APP_DIR/EmbeddedCert"
@@ -68,6 +69,48 @@ jobs:
         run: |
           zsign -k cert.p12 -p "${{ github.event.inputs.password }}" -m profile.mobileprovision -b "app.attack" -n "الرئيسية" modified_app.ipa -o signed_app.ipa
 
+      - name: Generate 12 Static Manifests
+        run: |
+          TAG="attack-${{ github.event.inputs.udid }}"
+          IPA_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/signed_app.ipa"
+          
+          mkdir -p manifests
+          for i in {1..12}; do
+            cat <<EOF > manifests/manifest_${i}.plist
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>items</key>
+                <array>
+                    <dict>
+                        <key>assets</key>
+                        <array>
+                            <dict>
+                                <key>kind</key>
+                                <string>software-package</string>
+                                <key>url</key>
+                                <string>${IPA_URL}</string>
+                            </dict>
+                        </array>
+                        <key>metadata</key>
+                        <dict>
+                            <key>bundle-identifier</key>
+                            <string>app.attack</string>
+                            <key>bundle-version</key>
+                            <string>1.0.0</string>
+                            <key>kind</key>
+                            <string>software</string>
+                            <key>title</key>
+                            <string>الرئيسية</string>
+                        </dict>
+                    </dict>
+                </array>
+            </dict>
+            </plist>
+            EOF
+          done
+
       - name: Create/Update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,5 +122,4 @@ jobs:
             git push origin :refs/tags/$TAG || true
           fi
           
-          # الرفع للريليز كملف IPA فقط
-          gh release create "$TAG" signed_app.ipa --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع بنجاح."
+          gh release create "$TAG" signed_app.ipa manifests/manifest_*.plist --title "الرئيسية - ${{ github.event.inputs.udid }}" --notes "تم التوقيع باستخدام 12 رابط تثبيت ثابت."
