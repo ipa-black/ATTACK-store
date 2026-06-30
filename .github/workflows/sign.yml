@@ -38,7 +38,7 @@ jobs:
           git clone --depth 1 https://github.com/zhlynn/zsign.git
           cd zsign/build/linux
           make clean && make
-          sudo mv zsign /usr/local/bin/
+          sudo mv ../../bin/zsign /usr/local/bin/
 
       - name: Decode Certs Safely
         run: |
