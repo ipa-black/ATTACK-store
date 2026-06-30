@@ -7,9 +7,9 @@ module.exports = async (req, res) => {
     const text = message.text;
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const vercelDomain = process.env.VERCEL_DOMAIN; 
-    const adminId = process.env.ADMIN_ID; // آي دي الإدمن الأساسي
+    const adminId = process.env.ADMIN_ID; 
 
-    // حماية بسيطة: إذا لم يكن الآي دي مطابقاً للإدمن
+    // حماية البوت
     if (String(chatId) !== String(adminId)) {
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
@@ -20,7 +20,9 @@ module.exports = async (req, res) => {
     }
 
     if (text === '/start' || text === '/panel') {
-      const panelUrl = `https://${vercelDomain}/panel`;
+      // 🟢 تم تصحيح المسار هنا (Vercel يحذف كلمة public تلقائياً)
+      const panelUrl = `https://${vercelDomain}/panel.html`;
+      
       const payload = {
         chat_id: chatId,
         text: "أهلاً بك في لوحة تحكم ATTACK STORE 🚀\nاختر من الأزرار بالأسفل لبدء التوقيع الفوري:",
