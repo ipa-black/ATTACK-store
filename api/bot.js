@@ -2,7 +2,6 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(200).send('OK');
 
   const message = req.body.message;
-  // للتعامل مع الـ callback_query إذا ضغط المدير على الزر لاحقاً
   const callbackQuery = req.body.callback_query; 
 
   let chatId, text;
@@ -44,9 +43,8 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
   }
 
-  // 2. إدارة المشرفين (للمشرف الأساسي فقط)
+  // 2. إدارة المشرفين (للمدير الأساسي فقط)
   if (isMainAdmin) {
-      // إذا ضغط على زر الإدارة
       if (text === 'admin_manage_btn') {
           await sendMessage(chatId, "👑 **قائمة أوامر الإدارة:**\n\n- لإضافة مشرف أرسل: `/addmod`\n- لعزل مشرف أرسل: `/delmod`\n- لعرض المشرفين أرسل: `/mods`");
           return res.status(200).send('OK');
@@ -103,18 +101,25 @@ module.exports = async (req, res) => {
   }
 
   // 3. لوحة التحكم الأساسية
-  if (text === '/start' || text === '/panel') {
+  if (text.startsWith('/start') || text === '/panel') {
     const panelUrl = `https://${vercelDomain}/panel.html`;
     const udidUrl = `https://${vercelDomain}/`; 
     
-    // الأزرار الافتراضية التي تظهر للجميع (المدير والمشرفين)
+    // إعداد نص ورابط التحويل المباشر
+    const shareText = "أهلاً بك في لوحة تحكم ATTACK STORE 🚀\nلاستخراج UDID والتوقيع الفوري:";
+    const directShareUrl = `https://t.me/share/url?url=${encodeURIComponent(udidUrl)}&text=${encodeURIComponent(shareText)}`;
+
+    // الأزرار الافتراضية
     let inline_keyboard = [
       [{ text: "🧭 فتح لوحة التحكم في سفاري", url: panelUrl }],
       [{ text: "🌐 استخراج UDID", url: udidUrl }],
-      [{ text: "↗️ تحويل / مشاركة البوت", switch_inline_query: "تفضل رابط البوت" }]
+      // زر يفتح واجهة تيليجرام لتحويل الرسالة لأي شخص أو قناة فوراً
+      [{ text: "↗️ تحويل الرسالة بشكل مباشر", url: directShareUrl }],
+      // زر الإنلاين الذي كان موجوداً مسبقاً
+      [{ text: "🔄 مشاركة عبر الإنلاين", switch_inline_query: "تفضل رابط المتجر للاستخراج" }]
     ];
 
-    // إضافة الزر الخاص بالمدير الأساسي فقط
+    // إضافة زر الإدارة للمدير الرئيسي فقط
     if (isMainAdmin) {
       inline_keyboard.push([{ text: "👑 أوامر إدارة المشرفين", callback_data: "admin_manage_btn" }]);
     }
