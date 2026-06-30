@@ -43,10 +43,9 @@ module.exports = async (req, res) => {
       return res.status(200).send('OK');
   }
 
-  // --- 1. الرد عند رفع الشهادة من الـ Web App (إن وُجدت) ---
+  // --- 1. الرد عند رفع الشهادة من الـ Web App ---
   if (webAppData) {
       const udid = webAppData.data || "UNKNOWN_UDID"; 
-      // التوجيه إلى ملف التثبيت الموجود في مجلد api
       const installUrl = `https://${vercelDomain}/api/install?udid=${udid}`; 
       
       const markup = {
@@ -72,6 +71,7 @@ module.exports = async (req, res) => {
                   const filePath = fileData.result.file_path;
                   const fileDownloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
                   
+                  // استخراج الـ UDID بحذف صيغة .p12 من اسم الملف
                   const extractedUdid = fileName.replace('.p12', '').trim();
                   
                   global.signState[chatId] = { 
@@ -99,11 +99,11 @@ module.exports = async (req, res) => {
 
   // --- 3. الرد بعد إدخال الرمز السري للشهادة ---
   if (global.signState[chatId]?.step === 'WAITING_CERT_PASSWORD' && text && !text.startsWith('/')) {
+      // جلب الـ UDID الذي تم استخراجه مسبقاً من اسم الملف
       const udid = global.signState[chatId].udid;
       
-      delete global.signState[chatId]; 
+      delete global.signState[chatId]; // إنهاء العملية ومسح الحالة
       
-      // التوجيه إلى ملف التثبيت الموجود في مجلد api
       const installUrl = `https://${vercelDomain}/api/install?udid=${udid}`; 
       const markup = {
           inline_keyboard: [
@@ -174,7 +174,7 @@ module.exports = async (req, res) => {
 
   // --- 5. واجهة "الرئيسية" ---
   if (text.startsWith('/start') || text === '/panel') {
-    // التوجيه إلى ملف الاستخراج الموجود في مجلد api
+    // تم التعديل ليتوجه إلى api/enroll
     const udidUrl = `https://${vercelDomain}/api/enroll`; 
     
     let inline_keyboard = [
